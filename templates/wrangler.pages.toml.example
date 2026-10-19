@@ -1,0 +1,16 @@
+# Route B (Pages direct upload + external CNAME). Copy to wrangler.toml next to dist/_worker.js.
+# Field-tested 2026-10-19 with wrangler 4.x on Node 22. See SKILL.md Section 6 "Pages direct upload".
+# SECRETS HYGIENE: never put real ADMIN/UUID/KEY values in this file.
+# Set them as encrypted secrets (Dashboard preferred; CLI: wrangler pages secret put <NAME> --project-name <PROJECT>).
+name = "<PROJECT>"                    # neutral name, e.g. notes-blog (SKILL.md W3)
+pages_build_output_dir = "./dist"     # contains the checksum-verified _worker.js (Pages advanced mode)
+compatibility_date = "2026-10-08"
+
+[[kv_namespaces]]
+binding = "KV"                        # must be exactly KV
+id = "<KV_NAMESPACE_ID>"
+
+# Non-secret variables only:
+[vars]
+HOST = "<SUB>.<YOUR_DOMAIN>"          # the custom subdomain, never the bare *.pages.dev / *.workers.dev
+# PROXYIP, BEST_SUB, GO2SOCKS5, PATH: leave unset on first build (SKILL.md Section 3.2)

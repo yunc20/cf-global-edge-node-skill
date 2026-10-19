@@ -1,0 +1,10 @@
+# One entry per line: <ENTRY_IP_OR_DOMAIN>:<PORT>#<REGION LABEL>
+# ALL values below are placeholders and will NOT connect. Replace only with entries that passed SKILL.md Section 7 liveness + end-to-end tests.
+# Note: ADD.txt is read only after panel config "本地IP库.随机IP" is set to false; it is NOT auto-created by the Worker.
+# Save it through the panel (POST /admin/ADD.txt). An ADD.txt-only change needs no redeploy.
+# Field note (2026-10-19): relay entries on the non-443 Cloudflare TLS ports 2053/2083/2087/8443 were the ones we could verify end to end.
+# Label with the VERIFIED exit region (TW-1, JP-1, ...), keep 3-5 verified backups per region OUTSIDE this file, and swap in a backup when a node times out on the real phone.
+<ENTRY_IP_1>:8443#JP-1
+<ENTRY_IP_2>:2053#SG-1
+<ENTRY_DOMAIN_1>:2087#US-1
+<ENTRY_IP_3>:443#Example Region (443 entries: verify from a clean network, see SKILL.md Section 7)

@@ -1,0 +1,12 @@
+SECRETS*
+*.local.*
+sub-url.txt
+*.png
+_worker.js
+wrangler.toml
+candidates*.json
+results*.json
+.wrangler/
+node_modules/
+dist/
+.venv*/
