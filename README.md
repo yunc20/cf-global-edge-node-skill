@@ -83,3 +83,7 @@ Workers 免费版每天 100,000 次请求，超了报 1027，UTC 零点（北京
 - **节点程序**：[cmliu/edgetunnel](https://github.com/cmliu/edgetunnel)（GPL-2.0）。本仓库不收录 `_worker.js`，只给钉版下载地址和 SHA-256。
 - **社区教程**：[yonggekkk/Cloudflare-vless-trojan](https://github.com/yonggekkk/Cloudflare-vless-trojan)、[yonggekkk/sing-box-yg](https://github.com/yonggekkk/sing-box-yg)、[XIU2/CloudflareSpeedTest](https://github.com/XIU2/CloudflareSpeedTest)、[bia-pain-bache/BPB-Worker-Panel](https://github.com/bia-pain-bache/BPB-Worker-Panel)、[cmliu/WorkerVless2sub](https://github.com/cmliu/WorkerVless2sub)、[233boy/sing-box](https://github.com/233boy/sing-box)。本仓库只引用、转述它们的做法并附链接，不复制它们的代码或数据文件。
 - 社区优选 IP 列表等第三方数据只在运行时引用，不收录进本仓库。
+
+## 许可证 / License
+
+本仓库的文档、Skill 和脚本以 [MIT](LICENSE) 许可发布。节点程序 `_worker.js` 来自 [cmliu/edgetunnel](https://github.com/cmliu/edgetunnel)（GPL-2.0），本仓库不打包它，请从原作者仓库下载并遵守其许可。
