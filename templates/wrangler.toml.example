@@ -13,4 +13,4 @@ id = "<KV_NAMESPACE_ID>"
 # Non-secret variables only:
 [vars]
 HOST = "<YOUR_DOMAIN>"
-# PROXYIP, BEST_SUB, GO2SOCKS5, PATH: leave unset on first build (SKILL.md Section 3.2)
+# PROXYIP, BEST_SUB, GO2SOCKS5, PATH, URL: leave unset on first build (SKILL.md Section 3.2)

@@ -86,19 +86,21 @@ Use only when W2 = 3. This branch does NOT renumber the 6 wizard steps: every qu
 
 Honesty rule (say this verbatim in substance): "优选IP可以把入口尽量偏向你选的国家/地区,但不能保证、更不能承诺任意国家的住宅IP。最后出口是哪儿,以实测出口IP的归属地为准;我测出来告诉你,你说行才算定,你说不行我们就换一个再测。"
 
-Step R1 Ask (multi-select allowed for up to 3 regions): "第6/6步(选地区): 你想要哪个国家/地区的出口?常见:美国、日本、新加坡、韩国、香港、台湾、英国、德国。也可以回你想的其它国家,或回 多个:美国,日本 这样最多选三个。要用 ChatGPT/Claude/Gemini 这类 AI 的话别选香港,这些服务不对香港开放。" Field default for mainland users who want low latency plus AI access (2026-10-19): Taiwan / Japan / Singapore, plus US as the reliable fallback. Taiwan relay candidates are scarce and often look like home/small-office devices that disappear within days, so give Taiwan fewer slots and keep a backup.
+Step R1 Ask (multi-select allowed for up to 3 regions): "第6/6步(选地区): 你想要哪个国家/地区的出口?常见:美国、日本、新加坡、韩国、香港、台湾、英国、德国。也可以回你想的其它国家,或回 多个:美国,日本 这样最多选三个。要用 ChatGPT/Claude/Gemini 这类 AI 的话别选香港,这些服务不对香港开放。" Field default for mainland users who want low latency plus AI access (2026-10-19): Taiwan / Japan / Singapore, plus US as the reliable fallback. Taiwan relay candidates are scarce and often look like home/small-office devices that disappear within days, so give Taiwan fewer slots and keep a backup. For AI use, also check what CF-hosted AI sites see (PROXYIP egress, Section 3.5) before the operator accepts the region.
 Step R2 Source candidates for each requested region using Section 7 rules (curated lists you can re-test, or the code random generator as fallback). Never silently substitute a different region's candidates when the list is empty: tell the operator "这个地区我暂时没找到能测的入口,要么换地区,要么先用随机入口试", and let them choose.
 Step R3 Test each candidate: (a) Section 7 TCP/TLS probe; (b) end-to-end exit verification, in this order of preference: (i) if you can run a local VLESS client (for example xray-core) on your box, build a one-node client config from the candidate URI, route a request through it to an IP-geolocation lookup, and record actual exit country/city and colo; (ii) otherwise ask the operator to import the single candidate node on their phone, open an IP-lookup page, and paste back the country/city shown. Record requested region vs actual exit country/city per candidate. A candidate whose actual exit disagrees with the request is "未命中", not a success to be relabelled.
 Step R4 Operator decides, loop: report "第6/6步(选地区): 你选的是 X,实测出口是 Y(城市 Z)。1) 就用这个 2) 换下一个候选再测 3) 换个国家。回数字。" Loop back to R3 or R1 until the operator accepts. Never end the build on an unaccepted region mismatch.
 Step R5 Write only accepted candidates into ADD.txt (Section 7 write path), set the node label to the ACTUAL verified exit region, re-fetch the subscription, and record in the Final Delivery Checklist: requested region(s), accepted candidate label(s), actual exit country/city per candidate, verification method (local client or phone), and date. The default random-IP mode has no region choice at all: if the operator cares about region, random mode is only a pipeline smoke test, never the delivery.
 
 
-## 1. Evidence base (verified 2026-10-17, re-verify before reuse)
+## 1. Evidence base (verified 2026-10-17, re-checked 2026-10-19 for v3; re-verify before reuse)
 
 - Local verified file `/workspace/_worker.js` is byte-identical to upstream main on 2026-10-17: SHA-256 `1e84d11af0544654bf56a06fa833e77184a57193288a9ffccf62c031a9fb7d65`, size 5,142,235 bytes, header line 1 `const Version = '2026-10-08 22:23:27';`. Upstream repo https://github.com/cmliu/edgetunnel (GPL-2.0), pinned commit `66f1c51c4ecee058b959104cb0517e073cdb1213`. Line numbers below refer to this pinned file; if a newer file is used, re-locate each function before trusting line hints.
 - Code facts used below, with line hints: env/UUID derivation L30-37; quick-sub redirect L87-90; login and admin routes L91-111, L208-299; subscription route and token L304-315; per-client format dispatch L332-347; local subscription generation from KV `ADD.txt` L356-361; VLESS URI template L452-456 and placeholder replacement L470-486; external subscription conversion L457-467; admin KV write endpoints L220-287; default config and KV auto-init in function `读取config_JSON` L5598-5845 (defaults L5600-5700, auto-create `config.json` L5702-5706, `tg.json` L5799-5804, `cf.json` L5814-5819); transport/path defaults function `获取传输协议配置` L4794-4815; double-MD5 function `MD5MD5` L5403-5415; random preferred IP generation L5878-5908.
 - Cloudflare platform facts checked 2026-10-17 in official docs: Workers Free 100,000 requests/day then error 1027, reset midnight UTC (https://developers.cloudflare.com/workers/platform/limits/); KV Free 100,000 reads/day, 1,000 writes/day to different keys, 1 GB/account (https://developers.cloudflare.com/kv/platform/limits/); Worker Custom Domain requires an active Cloudflare zone (https://developers.cloudflare.com/workers/configuration/routing/custom-domains/). Re-check before quoting.
 - Fast-route docs: Worker Custom Domains (API/Wrangler binding on an already-Active zone creates DNS + certificate automatically) https://developers.cloudflare.com/workers/configuration/routing/custom-domains/ ; Pages custom domains, including external-CNAME setup for a subdomain when DNS is hosted elsewhere (apex requires zone handling, so apex/root is excluded from Route B) https://developers.cloudflare.com/pages/configuration/custom-domains/ .
+- Re-checked 2026-10-19 (v3): upstream `main` HEAD `a8ab11125ece9bc27983f609a6359be81b21050c` (2026-10-09) still ships a `_worker.js` byte-identical to the pin (same SHA-256 and version header). Cloudflare TCP sockets doc (https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets/): "Outbound TCP sockets to Cloudflare IP ranges are blocked" — this is why PROXYIP exists (Section 3.5). Cloudflare network ports: HTTPS 443/2053/2083/2087/2096/8443, HTTP 80/8080/8880/2052/2082/2086/2095 (https://developers.cloudflare.com/fundamentals/reference/network-ports/).
+- Community tutorials studied for v3 (read 2026-10-19, cited where used): https://github.com/yonggekkk/Cloudflare-vless-trojan (port families, proxyip concept, `whatismyip` vs `ip.sb` exit check, client fragment), https://github.com/XIU2/CloudflareSpeedTest v2.3.5 (operator-side speed test, Section 7B), https://github.com/bia-pain-bache/BPB-Worker-Panel docs (fragment rationale, UDP limitation, 1101 = flagged account / panel-name in project name), https://github.com/cmliu/WorkerVless2sub (warning: never put private nodes into public preferred-sub generators), https://github.com/cmliu/CF-Workers-SUB (archived; aggregation merged into edgetunnel).
 - Community preferred-IP sources (third-party, runtime-reference only, no licence stated, may die or change without notice — never vendor/copy their data files into this package, never treat as guaranteed): primary scanned top-20, country-labelled, updated about every 6 hours https://raw.githubusercontent.com/LancelotRar/best-cf-ips/main/best-cf-ip-scanned-top20.txt ; fallbacks https://raw.githubusercontent.com/joname1/BestCFip/main/ipv4.txt and domain-lite https://raw.githubusercontent.com/LancelotRar/best-cf-domains/main/best-cf-domain-lite.txt . See the two-stage rule in Section 7.
 
 ## 2. Get _worker.js (version-locked, checksum-verified)
@@ -151,6 +153,9 @@ Rules: preheat never deploys, never writes KV, never binds a domain, never regis
 | `PROXYIP` | LEAVE UNSET on first build | - | If unset, code uses an automatic per-colo reverse proxy with fallback enabled (L44-49). If set, a random entry from the list is used and automatic fallback is disabled, so one dead entry can break nodes |
 | `BEST_SUB` | LEAVE UNSET on first build (default empty) | - | Only flags this Worker as a public preferred-subscription generator when a request arrives with placeholder host `example.com` and the code placeholder UUID `00000000-0000-4000-8000-000000000000` (L305, verbatim from code; this value is a public code placeholder, never a real credential, never use it as your UUID). Not needed for a private node. Never send the operator's real UUID/HOST to any public subscription generator/converter, and never use public generators to build the delivered subscription |
 | `GO2SOCKS5` | LEAVE UNSET on first build | - | Appends domains to the built-in SOCKS5 whitelist (L52-54). Advanced chain-proxy feature |
+| `URL` | LEAVE UNSET on first build | - | Root-page disguise (L505-512). Unset = built-in nginx-style page, which is enough. A URL value makes the Worker front that site; never point it at someone else's site. `1101` shows a fake error page |
+
+Other env switches that exist in the pinned file but stay unset for a first build: `DEBUG`, `OFF_LOG`, `PRELOAD_RACE_DIAL`, `TCP_CONCURRENT_DIAL`, `PROXY_CONCURRENT_DIAL` (L39-43, L5369; meanings in the edgetunnel README variable table).
 
 This table is authoritative and matches `templates/env.example` and `templates/wrangler.toml.example`. Any conflict between skill and templates is a bug; stop and report it.
 
@@ -174,6 +179,14 @@ OAuth/API cross-reference: some Cloudflare domain APIs reject OAuth-derived toke
 - Wrangler: never put real `ADMIN`/`UUID`/`KEY` values in `wrangler.toml` `[vars]` (that file gets committed). Keep `[vars]` for non-secret values only such as `HOST`. `templates/wrangler.toml.example` therefore contains only non-secret placeholders plus a warning comment; it has no secret lines at all (that is deliberate).
 - Large-Worker secret failure mode (field-observed, not a universal law): in one field deployment, `wrangler secret put` for secrets the code reads (`ADMIN`/`UUID`) on the ~5 MB Worker was followed by persistent 500 / error 1101 on all paths, while Dashboard-added secrets worked. This does **not** prove CLI/API secret-put always corrupts large Workers — earlier API/raw-multipart deploys in this project succeeded — so treat it as a known failure mode + fix, not a ban. If you do use CLI/API secret-put: verify immediately (`/login` and `/sub` return expected 200s, Section 9). If persistent 1101/500 starts right after a secret change and re-uploading the checksum-verified code does not fix it, stop patching that Worker: delete-and-recreate **only the newly created Worker for this build**, re-upload the verified code, then add secrets via Dashboard (Section 9, 1101 row).
 - A Cloudflare API token for Wrangler must be scoped to Workers/KV edit on the one account, supplied by the operator at the gate, and revoked after use. Never use a Global API Key, never paste any credential into chat logs, articles, screenshots, or this package.
+
+### 3.5 PROXYIP and Cloudflare-hosted destinations (explain once, in plain Chinese)
+
+- Fact (Cloudflare doc, Section 1): a Worker's outbound TCP `connect()` to Cloudflare IP ranges is blocked. Destinations that are themselves behind Cloudflare (X, ChatGPT, many sites) therefore go through a relay, the PROXYIP. Everything else exits from Cloudflare Workers egress.
+- Code (L44-49): with `PROXYIP` unset, the Worker derives a per-colo default (`<colo>.` + a built-in upstream proxyip domain) and keeps automatic fallback on. Setting `PROXYIP` picks one random entry from your list and turns fallback OFF. Hence first-build rule: leave it unset.
+- Symptom map: YouTube/Google fine but X/ChatGPT/CF-hosted sites fail = PROXYIP problem, not a dead node. Try another node/region first; only then set `PROXYIP` to a value you verified (format `host:port`; README example `proxyip.cmliussss.net:443`). BPB FAQ adds: a single fixed proxy IP tends to die after a while.
+- Region seen by AI services: CF-hosted AI sites see the PROXYIP egress, not the entry. Verify with the node connected: `https://www.whatismyip.com` (non-CF site, shows CF egress) vs `https://ip.sb` (CF-hosted, shows proxyip egress) — method from yonggekkk's README. `https://chatgpt.com/cdn-cgi/trace` `loc=` is a derived check (inference from the mechanism, not quoted from a tutorial; label it so).
+- Per-node override exists in code: path `/proxyip=<host:port>` (L439) and list lines carrying `proxyip=true` (L372-373). Advanced; do not use on a first build.
 
 ## 4. Subscription URL and panel (exactly as code implements)
 
@@ -235,7 +248,7 @@ Precondition: Section 0 gate passed. Placeholders below are replaced with operat
 1. Section 2 download and checksum pass on the operator machine or this box.
 2. Dashboard -> Workers & Pages -> Create -> Worker, name `<WORKER_NAME>`, deploy the starter so the service exists.
 3. Worker -> Edit code: replace all code with the verified `_worker.js`, Deploy. A truncated paste shows up later as error 1101; file size in the editor should correspond to 5,142,235 bytes.
-4. Settings -> Variables and Secrets: secrets `ADMIN`, `UUID`, `KEY` (if used) — add them here in Dashboard by default for this ~5 MB Worker (clean redeploy; see Section 3.3 field-observed CLI-secret failure mode); plain var `HOST` = gate-3 hostname. Leave `PROXYIP`, `BEST_SUB`, `GO2SOCKS5`, `PATH` unset. Deploy if prompted, then immediately verify `/login` + `/sub` (Section 9) before proceeding.
+4. Settings -> Variables and Secrets: secrets `ADMIN`, `UUID`, `KEY` (if used) — add them here in Dashboard by default for this ~5 MB Worker (clean redeploy; see Section 3.3 field-observed CLI-secret failure mode); plain var `HOST` = gate-3 hostname. Leave `PROXYIP`, `BEST_SUB`, `GO2SOCKS5`, `PATH`, `URL` unset. Deploy if prompted, then immediately verify `/login` + `/sub` (Section 9) before proceeding.
 5. Storage & Databases -> KV -> Create namespace (e.g. `edge-node-kv`). Worker -> Settings -> Bindings -> Add -> KV Namespace: variable name exactly `KV` (case-sensitive), select the namespace, Deploy.
 6. Hostname — apply Route priority A > B > C (Section 3.4): **A** if the zone is already Active, bind Worker Custom Domain `node.<YOUR_DOMAIN>` (dashboard Settings -> Domains & Routes, or API `PUT /client/v4/accounts/{account_id}/workers/domains` with `zone_id`/`hostname`/`service`, or Wrangler `custom_domain`), wait until the domain (not the zone) is Active — minutes, no NS wait — and use it as canonical `HOST`. **B** if the domain is external but DNS-editable, switch this build to the Pages variant (see Alternative: Pages), set the Pages custom domain for the subdomain, add the external CNAME to `<PROJECT>.pages.dev`, check conflicts first (another subdomain name on conflict, never overwrite), apex excluded. **C** NS move only when A/B are impossible: wait for zone Active under the 15-min/2-hour rule (Section 9) before any binding or QR. For workers.dev, confirm the URL `https://<WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev` answers, but treat that only as "deployed", not as "nodes will connect on mainland networks" (Section 3.1 warning). One canonical hostname only for the first build (Section 3.1).
 7. First login: open `https://<HOST>/login`, sign in with `ADMIN`, land on `/admin`. This first authenticated load (and the first subscription fetch) triggers config initialisation (Section 8). Fetch GET `/admin/config.json` and record: UUID matches gate value, HOST/HOSTS match canonical hostname, TOKEN present (this is your Section 4 token, do not publish it).
@@ -336,6 +349,31 @@ Relay-entry field notes (second production build, 2026-10-19; methods, not a lis
 - China-side latency: Globalping probes from mainland cities (ping/TCP to the entry) help rank candidates, but they predicted the operator's phone poorly. In the first phone test, 3 of 9 nodes that passed every server-side check timed out on the operator's carrier. Rule: freeze the best <=10, keep 3-5 verified backups per region out of ADD.txt, ask the operator for one Shadowrocket latency/connectivity screenshot, swap the timed-out lines for backups (ADD.txt-only change, no redeploy), and re-fetch.
 - Region reality: SG and JP candidates were plentiful and stable; US was the dependable fallback; TW candidates were few, often residential/small-ISP devices with short lifetimes. Label each node with its verified exit (e.g. `TW-1`, `JP-2`), never with the list's claim.
 
+### 7A. ADD.txt line types and ports (code-verified L356-456)
+
+| Line | Handling |
+|---|---|
+| `IP:PORT#LABEL`, `[IPv6]:PORT#LABEL`, `domain:PORT#LABEL` | Normal preferred entry; port defaults to 443 |
+| `https://...` | Preferred-IP API/list fetched at subscription time (Stage 1) |
+| `sub://...` or `...sub=<host>...` (L364-374) | Upstream preferred-sub generator. Do not use for a private node (sends requests to a third party) |
+| any other `scheme://...` (e.g. a full `vless://` URI) | Passed through verbatim as an extra node — this is how a VPS node can be merged into the same subscription (Section 15) |
+| label containing `$socks5://`/`$http://` etc. | Per-node chain proxy (L427-433). Advanced, not first build |
+| `*` inside a domain | Replaced by random characters (L383-384) |
+
+Malformed lines are skipped silently. Never put trailing comments on a line.
+
+Port families (CF doc + yonggekkk): custom-domain/Pages nodes use TLS, so only the HTTPS family 443/2053/2083/2087/2096/8443 applies to Cloudflare official IPs; the HTTP family (80/8080/8880/2052/2082/2086/2095) is only for no-TLS `workers.dev` setups and is out of scope. Third-party relays only work on the port the relay operator opened.
+
+### 7B. Operator-side speed test (CloudflareSpeedTest on the operator's own Windows)
+
+The agent-machine restriction above (fallback-only, small sample) stays. Running CFST on the OPERATOR's own machine is different and encouraged: it is the operator's real carrier. Guide them (from XIU2 README v2.3.5):
+
+1. Download `cfst_windows_amd64.zip` from https://github.com/XIU2/CloudflareSpeedTest/releases, unzip (e.g. `D:\cfst`).
+2. Quit Clash Verge / any proxy first. XIU2: an average latency of 0.xx ms means the test went through a proxy and is useless.
+3. PowerShell in that folder: `.\cfst.exe -httping -cfcolo NRT,KIX,SIN,TPE,LAX,SJC,SEA -tl 250 -dd -n 100` (`-cfcolo` only works with `-httping`; `-dd` skips the download test because the default download URL is not guaranteed; keep `-n` modest because HTTPing is scan-like and can trigger temporary ISP/CF limits). IPv6-capable home networks can add `-f ipv6.txt` (keep some IPv4 entries for networks without IPv6).
+4. Ask the operator to paste the top rows of `result.csv` (IP, latency, colo). Turn them into `IP:443#<REGION>-<n>` lines, then still run Section 7 liveness + end-to-end exit check before freezing.
+5. Results differ run to run (one random IP per /24) — normal. Official CF IPs land wherever the carrier routes them (often US west); JP/SG/TW exits usually need relay entries.
+
 Never publish a working `ADD.txt` together with your subscription URL; together they hand out your node.
 
 ## 8. KV keys: what the code auto-creates (and what it does not)
@@ -393,7 +431,12 @@ Troubleshooting quick table:
 | `wrangler` fails with EACCES / permission denied creating `/node_modules`, or prompts about metrics | No local `node_modules`/package.json, unwritable default cache, telemetry prompt in a non-interactive shell | `mkdir node_modules` in the project, `export WRANGLER_SEND_METRICS=false WRANGLER_CACHE_DIR=$PWD/.wrangler/cache`, use Node 22 (Section 6, Pages direct upload) |
 | DNSHE refuses the sign-up email | Disposable/agent/bot-style mailbox domains are rejected | Ask the operator for a mainstream mailbox they own (an Outlook address worked); do not cycle through throwaway domains |
 | DNSHE will not let you claim the free domain | TOTP 2FA not bound yet | Show the TOTP setup in the session, the operator binds it in their authenticator app and enters the code (确认点), then claim |
-| Project restricted/flagged right after creation | Proxy-sounding project name attracting automated review (field anecdote) | Do not argue with the flag or reuse the name. Rebuild under a neutral name (W3) on the same account only if the account itself is fine; never use multi-accounting to evade enforcement |
+| Project restricted/flagged right after creation | Proxy-sounding project name attracting automated review (field anecdote; BPB FAQ likewise ties 1101 to flagged accounts and panel names in project names) | Do not argue with the flag or reuse the name. Rebuild under a neutral name (W3) on the same account only if the account itself is fine; never use multi-accounting to evade enforcement |
+| YouTube/Google work, X/ChatGPT/other CF-hosted sites fail | PROXYIP path failing (Section 3.5) | Try another node/region; confirm `PROXYIP` is unset (auto + fallback); only then set one verified `PROXYIP`. Not a dead node, do not swap ADD.txt for this |
+| ChatGPT/Claude says region unsupported | Exit seen by the CF-hosted AI site (PROXYIP egress) is HK or another unsupported region | Use TW/JP/SG/US nodes; check `ip.sb` / `chatgpt.com/cdn-cgi/trace` `loc=` through the node (Section 3.5) |
+| Custom domain worked for days, then all nodes time out together; panel unreachable from mainland without proxy | Hostname likely TLS-blocked (SNI) | Bind a fresh subdomain, set `HOST`, re-issue subscription + QR; or enable client TLS fragment (panel `TLS分片` = Shadowrocket emits `fragment=1,40-60,30-50,tlshello`, L353; rationale in BPB fragment docs / yonggekkk). Leave fragment off when not blocked |
+| Telegram calls / UDP games fail | Worker path is TCP-only (Section 10 UDP note; BPB FAQ: Cloudflare cannot properly handle UDP) | Expected. Offer the VPS route (Section 15) for UDP needs |
+| Operator's CFST shows ~0.xx ms latency, or 0 results | Proxy still running during the test / no IP in the chosen colos / test URL unreachable | Quit the proxy and rerun; drop `-cfcolo` to widen; add `-debug` (XIU2 README) |
 
 ## 10. QR code (mandatory final deliverable) and client import
 
@@ -424,6 +467,10 @@ Shadowrocket node checklist (do this before blaming a node; these are the exact 
 
 Clash Verge (Windows, field-tested 2026-10-19): Profiles (订阅) -> paste the subscription URL -> Import -> select the profile -> Proxies -> pick a node -> turn on System Proxy (系统代理), or TUN mode for apps that ignore the system proxy. With a Mihomo core, Clash Verge asks with a Clash UA, so the Worker returns `clash` YAML via SUBAPI (Section 4 privacy note). If that import fails while Shadowrocket works, the converter is down or blocked: retry later or switch `SUBAPI` to another/self-hosted backend. Do not hand-edit the generated YAML; refresh the profile instead.
 
+Privacy-preferring Windows alternative: v2rayN consumes the `mixed` base64 subscription directly, so no SUBAPI converter sees the domain/entries (Section 4 privacy note). Offer it when the operator cares about that exposure.
+
+TLS fragment (client side): only when the hostname is TLS-blocked (Section 9 row). The panel option `TLS分片` = `Shadowrocket` makes generated nodes carry `fragment=1,40-60,30-50,tlshello`; `Happ` emits `3,1,tlshello` (L353). Default is off; keep it off otherwise (slower, and a mismatch can stall).
+
 Clash / sing-box / v2rayN: import the same URL; the server selects format by target param or client UA (Section 4). If a client lets you choose, request its named target explicitly (`&target=clash`, `&target=singbox` appended after the token). Format sanity check without trusting the external converter blindly: fetch the clash URL and confirm the response content-type is `application/x-yaml` and the sing-box URL is `application/json` (both set in code at L488-494); a text/plain mixed body or an error page means the converter path failed, so fall back to `mixed` and retry the target later. Do not invent expected YAML/JSON node internals; the converter owns them.
 
 ## 11. Final Delivery Checklist (copy this into the delivery message)
@@ -438,6 +485,8 @@ Clash / sing-box / v2rayN: import the same URL; the server selects format by tar
 - [ ] Quota note: Workers Free 100,000 requests/day (UTC reset); current usage seen in Metrics `<X>` requests today (or "not yet visible")
 - [ ] Rotation note delivered: rotating `ADMIN`/`UUID`/`KEY` invalidates old subscription URLs and QRs; re-issue all three together
 - [ ] Fallback note delivered: keep one non-CF node; this free-tier Worker is a convenience layer
+- [ ] CF-hosted-site check: X/ChatGPT open through one node; `ip.sb` (PROXYIP egress) region noted; `PROXYIP` still unset or set to a verified value (Section 3.5)
+- [ ] Maintenance note delivered (Section 14): domain expiry `<DATE>` and renewal window, how to swap nodes, pinned SHA-256 recorded
 
 ## 12. Security, privacy, never-do
 
@@ -447,6 +496,9 @@ Clash / sing-box / v2rayN: import the same URL; the server selects format by tar
 - Respect Cloudflare terms and local law; reselling free-tier nodes, public subscriptions for strangers, or quota evasion risks account suspension (check https://www.cloudflare.com/terms/).
 - Use original-author repositories only (cmliu/edgetunnel at the Section 2 pin). Search results for edgetunnel/EDtunnel include many re-uploads and forks; some may be modified to exfiltrate UUIDs or traffic. The SHA-256 check is what protects you, not the repo name.
 - Personal use only. Cloudflare's terms do not allow Workers/Pages as a general proxy service; personal low-volume use is a ban risk you accept, while sharing the subscription, building a "机场" for others or reselling is what gets projects and accounts suspended. Keep one non-CF backup line.
+- XIU2's CloudflareSpeedTest README states plainly that Cloudflare CDN forbids proxy use and that proxy-over-CDN is at your own risk; quote that when the operator asks "会不会被封".
+- Never put the operator's node, UUID, or HOST into a public preferred-sub generator (WorkerVless2sub's own README warns that anything put into its `LINK` is visible to everyone) or a public converter you did not choose deliberately.
+- Never set `URL` to someone else's website (it would front that site under the operator's domain).
 - Never modify, restart, or reconfigure an existing production proxy panel, database, or node (including any 3x-ui/x-ui service) to help with a CF build. CF work happens only inside the operator Cloudflare account and client apps.
 - Never copy credentials or subscription URLs out of an existing deployment into examples. Never claim speed, region, residential status, or unlimited-free results not measured in the current session.
 - Account safety for Branch D: never collect a Google, Cloudflare, or DNSHE password/OTP/2FA code in chat — credentials go only into the browser's own login fields / the secure credential prompt the host provides. The deploying Agent drives its own cloud/browser environment for Cloudflare and DNSHE registration flows; the operator only passes 确认点 pauses (authorize/confirm login state, captcha/人机验证, 2FA/OTP, and other human-only checks) and gives explicit "好，注册 <DOMAIN>" for the exact domain shown before the Agent submits — one domain, no bulk registering, never bypass captcha, respect the registrar's current terms. If the Agent has no browser tool, it must say so honestly and fall back to guiding instead of pretending it browsed. The domain is the operator's asset: remind them to keep their own DNSHE + Cloudflare logins safe; you do not store them.
@@ -468,3 +520,34 @@ A second, fully separate build for a mainland-China operator (Shadowrocket on iO
 | Clash Verge import | Section 10 |
 | Free quota: 100k requests/day was far more than one person browsing X and YouTube used. Exit is Cloudflare (AS13335), not residential | Sections 1, 9 |
 
+## 14. Maintenance and upgrades (tell the operator once at delivery)
+
+| Task | When | How |
+|---|---|---|
+| Domain renewal | Per term seen at registration | DNSHE 1-year names: free renewal from 180 days before expiry; put the date in the delivery checklist. Other registrars: their own rule, verify live |
+| Swap dead nodes | On phone timeouts | ADD.txt-only change via panel, no redeploy (Section 7) |
+| Re-measure entries | Every few weeks, or when many nodes degrade | Operator-side CFST (7B) plus relay re-probe |
+| Quota | Occasionally | Metrics; 100k requests/day on Free, reset 00:00 UTC (08:00 Beijing) |
+| Upgrade `_worker.js` | Only with a reason (bug fix, block) | Read upstream CHANGELOG; download from cmliu/edgetunnel only; compute and record the NEW SHA-256 + version header (this replaces the Section 2 pin for this deployment, so redo the Section 1 evidence pass for any line hints you rely on); keep the old file for rollback; redeploy; re-run Section 9 checks 1-3. KV config and ADD.txt persist across code uploads |
+
+## 15. Alternative: the operator has a VPS
+
+Not part of the CF build; mention only if asked or if UDP/stability matters.
+
+- One-click scripts: https://github.com/yonggekkk/sing-box-yg (VLESS-Reality, VMess-WS/Argo, Hysteria2, TUIC, AnyTLS; supports pure-IPv6 VPS; install `bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/sing-box-yg/main/sb.sh)` per its README) or https://github.com/233boy/sing-box (default VLESS-REALITY; docs https://233boy.com/sing-box/sing-box-script/). Review any script before running it as root on the operator's server, and only with their explicit go-ahead.
+- Prefer VLESS-Reality first (no domain/cert). Community reports (2026-10) of Hysteria2 (UDP) failing on mainland carriers while Reality worked on the same VPS; carrier-dependent.
+- Pure-IPv6 VPS: the client network must have IPv6 (operator can check test-ipv6.com with the proxy off).
+- Merge into the same subscription: put the VPS node's full `vless://...` URI as a line in ADD.txt (Section 7A pass-through). That URI is a credential too.
+- yonggekkk also documents self-building a proxyip on a pure-IPv6 VPS; advanced, out of scope.
+
+## 16. v3 merge index (what came from where)
+
+| Source | What was merged | Where |
+|---|---|---|
+| free-dam-man original v2 | Gate, W1-W7 wizard, 0B region loop, pin + SHA-256, token/URI formulas, KV table, QR delivery, checklist | Sections 0-12 (structure unchanged) |
+| v2 field notes (our second build) | Route B Pages direct upload, DNSHE notes, neutral names, wrangler fixes, relay ports, phone-test swap loop, privacy notes | Section 13 index |
+| cmliu/edgetunnel README + code | `URL`/`DEBUG`/... env list, ADD.txt line types, per-node proxyip, TLS fragment options, Pages-upload as author-recommended route | 3.2, 3.5, 7A, 10 |
+| yonggekkk/Cloudflare-vless-trojan | Port families, why proxyip matters for CF-hosted sites, `whatismyip` vs `ip.sb` check, fragment for blocked domains, pure-IPv6 VPS ideas | 3.5, 7A, 9, 15 |
+| XIU2/CloudflareSpeedTest | Operator-side Windows speed-test recipe, proxy-off warning, scan-rate warning, CF ToS note | 7B, 9, 12 |
+| BPB-Worker-Panel docs | Fragment rationale, UDP limitation, single-proxyip decay, 1101/project-name note | 3.5, 9, 10 |
+| WorkerVless2sub / CF-Workers-SUB | Public-generator privacy warning; aggregation now inside edgetunnel | 12, 7A |

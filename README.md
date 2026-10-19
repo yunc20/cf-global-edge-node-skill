@@ -1,38 +1,39 @@
-# CF 全球边缘节点 Skill(可下载包 v2 + 实战补记)
+# CF 全球边缘节点 Skill（v3）
 
-> 本仓库基于 [free-dam-man/cf-global-edge-node-skill](https://github.com/free-dam-man/cf-global-edge-node-skill) 的 v2 改编，并加入了第二次独立实战部署的经验（v2-field-notes，2026-10-19）。节点程序本身来自 [cmliu/edgetunnel](https://github.com/cmliu/edgetunnel)（GPL-2.0）。致谢见文末「致谢与来源」。
+> 一个能让 AI 一步步带新手搭好**个人 Cloudflare 节点**的 Skill，外加一篇照着就能做的中文教程。
+> v3 把三样东西合成了一版：free-dam-man 的原版 Skill、我们两次实战部署的笔记、几个社区知名教程里最有用的部分。
 
-把一套 Cloudflare 全球边缘节点(Workers/Pages + KV 优选 IP)的搭建经验做成 AI Skill。新 Bot 只看这个 Skill,在操作者提供自己的 Cloudflare 账号/域名后,应能一路走到:真实订阅链接 + 可扫码的订阅二维码。
+- **新手看这个** → [docs/tutorial-zh.md](docs/tutorial-zh.md)：从注册到扫码，一共 17 节，含本地测速、proxyip 原理、排障表、日常维护
+- **AI 看这个** → [SKILL.md](SKILL.md)：门禁、向导（第1/6步～第6/6步）、钉版校验、部署、优选 IP、验证、交付清单
+- **发推用** → [docs/x-thread-zh.md](docs/x-thread-zh.md)
 
-v2 修订(2026-10-17,依独立实测 15 条意见):新增开工前 STOP-and-ask 门禁清单、源码钉版下载+SHA-256 校验、按源码写死的订阅 URL/令牌公式、完整 VLESS URI 示例、base64 解码验证、优选 IP 先测活再写 ADD.txt、KV 自动建键对照表、强制二维码交付步骤与 Final Delivery Checklist。
+## 它做出来的是什么
 
-实测补充(2026-10-17):优先绑自定义域名当正式 HOST/SNI;只用 workers.dev 时大陆网络常见全部节点超时。部署方必须先自验订阅解码与握手,不得把未验证的节点批量甩给用户逐个试。
+- 入口：Cloudflare 全球边缘（优选 IP，写在 KV 的 `ADD.txt` 里）
+- 核心：钉版的 [cmliu/edgetunnel](https://github.com/cmliu/edgetunnel) `_worker.js`（commit `66f1c51c`，SHA-256 见 SKILL.md 第 2 节；2026-10-19 核对仍与上游 main 一致）
+- 出口：普通网站看到的是 Cloudflare 的 IP，套了 CF 的网站（X、ChatGPT）看到的是 proxyip 的 IP。**不是家宽，也不是 VPS**
+- 交付：管理面板地址、订阅链接、订阅二维码、至少一个已经连通的客户端
 
-提速路线(A>B>C,详见 SKILL.md 3.4/第6节):A 域名已在 Cloudflare 激活的,直接用 API/Wrangler 绑 Worker 自定义域名,Cloudflare 自动建 DNS+证书,分钟级、不用等 NS;B 域名在别家/DNSHE 但能改 DNS 的,走 Pages + 外部 CNAME 子域名(edge-node 子域名指向 <项目>.pages.dev),跳过整域 NS 激活,根域名不行、记录冲突就换子域名名绝不覆盖;C 实在不行才迁 NS 到 Cloudflare,最慢,每15分钟查一次、超2小时还 initializing 就停下汇报并建议删区重加,激活前不绑域名不出码。用户答题时 AI 后台并行预热(下载校验程序、拉优选清单、预探候选),答完直接开工。
+## v3 新增了什么
 
-优选 IP 两段式(详见 SKILL.md 第7节):第一段图快,ADD.txt 只放一行社区优选列表 URL(按用户选的地区交集),交付必须明说「社区源自动列表版(未逐个实测)」;同一轮里第二段由 AI 拉清单、按地区筛、逐个 TLS 探活(SNI=正式域名),冻结最多10个明确 IP 进 ADD.txt 并去掉那行活链接,才叫「已冻结实测版」。社区源是第三方、无授权声明、可能失效或变更,只运行时引用,绝不把它们的数据文件打包进本包;BEST_SUB 默认留空,绝不把用户的 UUID/HOST 发给公共订阅生成/转换站。CloudflareSpeedTest 只作小样本兜底(-n 200 -dn 10),AI 机器上测的快不等于用户手机运营商测的快。
+| 内容 | 来源 |
+|---|---|
+| 教程重写成 17 节：选路线、免费域名对比、网页版和命令行版部署、变量表、绑域名、ADD.txt 全部写法、地区建议、维护、VPS 备选 | 原版 + 实战笔记 + 下面各家 |
+| **在自己的 Win10 上用 CloudflareSpeedTest 测优选 IP**（先关代理、指定机房、降并发） | [XIU2/CloudflareSpeedTest](https://github.com/XIU2/CloudflareSpeedTest) |
+| **proxyip 讲清楚**：为什么 YouTube 能开、X/ChatGPT 打不开；whatismyip 和 ip.sb 分别看哪个出口 | [CF 官方文档](https://developers.cloudflare.com/workers/runtime-apis/tcp-sockets/)、[yonggekkk](https://github.com/yonggekkk/Cloudflare-vless-trojan)、edgetunnel 源码 |
+| CF 端口表（443 系 / 80 系），哪些端口能用 | CF 官方文档、yonggekkk |
+| 域名被阻断时的办法：换子域名，或客户端开 TLS 分片 | [BPB-Worker-Panel 文档](https://github.com/bia-pain-bache/BPB-Worker-Panel)、yonggekkk、edgetunnel 源码 |
+| ADD.txt 支持的写法：IPv6、域名、远程列表、直接放 `vless://` 节点（可以把 VPS 节点并进同一个订阅） | edgetunnel 源码（已逐行核对） |
+| 新的排障条目：proxyip、AI 提示地区不支持、域名被阻断、UDP 不通、测速结果异常 | 各家 + 实战 |
+| 日常维护和安全升级的步骤（续域名、换节点、升级时重新钉版） | 实战 |
+| 有 VPS 时的备选：sing-box-yg / 233boy，优先 VLESS-Reality | [yonggekkk/sing-box-yg](https://github.com/yonggekkk/sing-box-yg)、[233boy/sing-box](https://github.com/233boy/sing-box) |
+| 隐私提醒：公共订阅生成器别放私人节点；介意转换服务的话改用 v2rayN | [cmliu/WorkerVless2sub](https://github.com/cmliu/WorkerVless2sub)、edgetunnel 源码 |
 
-v2-field-notes 补记(2026-10-19,第二次独立部署,已去敏,详见 SKILL.md 第13节索引和 [CHANGELOG](CHANGELOG.md)):这次走的是路线 B,即 Pages 直传钉版 `_worker.js`,再在 DNSHE 免费域名 `us.ci` 下开一个子域名 CNAME 过去,几分钟就通了,不用迁 NS,也绝不拿裸 `workers.dev`/`pages.dev` 当节点地址。项目名起得不起眼一点,比如 `notes-blog`:另一位操作者第一次用很像代理的名字,项目刚建就被风控,换中性名字重建就过了(属个案经验,不是官方规则)。DNSHE 有几个坑:一次性邮箱和机器人邮箱会被拒(Outlook 能用),领域名前必须先绑 TOTP 两步验证,免费期 1 年,到期前 180 天内可以免费续。wrangler 4 用 Node 22 跑,另外要设 `WRANGLER_SEND_METRICS=false`,把 `WRANGLER_CACHE_DIR` 放进项目目录,再建一个空的 `node_modules/`。优选入口用第三方反代的非 443 端口(2053/2083/2087/8443),用 xray 真跑一遍看出口;Globalping 的国内延迟只能当参考,真机测出超时的就换备用。要用 AI 的别选香港。管理面板的界面是从 edt-pages.github.io 远程加载的,Clash 订阅要经过 SUBAPI 转换,所以面板少登。只认原作者仓库。
-
-## 架构
-
-- 入口:Cloudflare 全球边缘(随机优选,或 KV `ADD.txt` 里的自选优选 IP)
-- 核心:钉版单文件 Worker(`_worker.js`,上游 cmliu/edgetunnel,commit `66f1c51c4ecee058b959104cb0517e073cdb1213`,SHA-256 见 SKILL.md)
-- 出口:Cloudflare Workers 出口。不是住宅出口,也不是 VPS。
-- 交付物:管理面板 URL、订阅 URL(`https://<HOST>/sub?token=<TOKEN>`)、订阅二维码 PNG、已连通的客户端
-
-## 小白模式(默认)
-
-下载了这个 Skill 的 AI 应该进入"向导模式":一次只问一个问题(有没有 CF 账号、用免费地址还是自己的域名、面板密码、想要哪个国家),其余的它自己做,最后给用户一张二维码扫码就行。用户不需要懂部署,也不需要自己动手部署。
-
-必需与可选,说清楚:
-- Cloudflare 账号:必需,免费注册,没有它搭不了。
-- 域名:不必需,但有就优先用。有绑在 Cloudflare 上的域名就绑个子域名当正式地址;没有域名也能先用 workers.dev 部署,但大陆网络下 workers.dev 当节点地址常见整批节点握手超时(面板能开不代表节点能连),真超时就绑自定义域名、改 HOST 后重发订阅和二维码(换地址后旧二维码失效)。
-- 国家/地区:用户自己选。AI 按选的地区找入口、实测出口IP归属地,报"实际出口是哪儿",用户点头才定,不行就换。优选IP只能尽量偏向某地区,不能承诺任意国家、更不能承诺住宅出口;出口始终是 Cloudflare 边缘。
+SKILL.md 保留了原版的整体结构（门禁、W1–W7 向导、第X/6步编号、地区确认循环、钉版校验、交付清单），新知识按需并进对应章节，第 16 节有"哪条来自哪里"的索引。完整变更见 [CHANGELOG](CHANGELOG.md)。
 
 ## 向导开场预览
 
-装好 Skill 的 AI 会先发这一张卡, 然后按 第1/6步 到 第6/6步 一步一步问, 最后一步是 第6/6步(选地区):
+装好 Skill 的 AI 会先发这一张卡，然后从第1/6步问到第6/6步（选地区）：
 
 ```text
 先花30秒看完, 然后我们一步一步来:
@@ -45,54 +46,40 @@ v2-field-notes 补记(2026-10-19,第二次独立部署,已去敏,详见 SKILL.md
 说明: 我只能尽量把入口偏向你选的国家或地区, 不能承诺任意国家的IP, 最后以实测出口为准, 你点头才算定。
 ```
 
-觉得太长可以对 AI 说"简单点", 它会压成三段对话来讲, 但该问的和该验的一样都不会少。
-
-没域名也有路(第2/6步子分支 D1-D4): 第2步选 3,AI 先问是否主要在大陆网络用,不在大陆可直接跳过域名用 workers.dev;在大陆又想稳,AI 会自己打开它的云端浏览器去 [DNSHE 免费域名](https://my.dnshe.com/clientarea.php?language=chinese&autolang=1) 和 Cloudflare 全程操作注册(该站有不同年限，优先选10年期；若只有1年期，老实告知续期规则：到期前180天内免费续；以站点当期规则为准,不承诺没在现场看到的年限),你不用在自己的浏览器里动手注册。你只过几个"确认点":确认登录状态(如批准 Google 登录提示、确认"已登录")、完成 AI 做不了的人机验证/2FA 验证码、以及对着准确域名回复"好，注册 <域名>"后 AI 才提交注册。密码和验证码绝不打进聊天,只填进浏览器自己的登录框/宿主提供的安全凭据提示;AI 不得绕过人机验证、不得批量注册,一次只注一个。查域名、改 NS 到 Cloudflare、等 DNS 激活、绑 Worker 自定义域名、改 HOST、重发订阅和二维码都由 AI 在云端浏览器/后台做完再汇报;AI 若根本没有浏览器工具,必须老实说并改成一步步引导,不假装浏览过。免费套餐若不让改 NS,AI 会停下来让你选别的域名或接受 workers.dev 的超时风险,不假装成功。域名是你自己的资产,DNSHE 和 Cloudflare 的登录方式请自己收好。
-
-电脑端实跑补记(已去敏,详见 SKILL.md 第3.3/3.4/6/9节):域名卡 `initializing` 先查建站向导/计划步骤是否走完,没走完 Cloudflare 可能还没开始开通,走完再套每15分钟查、超2小时停的规则;~5MB 大 Worker 的密钥默认走面板添加(干净重部署),CLI/API 加密钥后必须立刻验 `/login`、`/sub`,若持续 1101/500 且重传代码修不好,就删掉重建这个新建 Worker 再用面板加密钥——这是现场观察的故障模式,不是"CLI 必坏"的定论,此前 API 部署也有成功例;某些绑域名接口不收 OAuth 令牌时改走面板绑域名;排 500 用最小对照组,一次只变一个因素(无密钥/有密钥、小文件/大文件)。
-
-手机端实跑补记(已去敏,详见 SKILL.md 第6/7/9节):Pages 网页拖拽上传 `_worker.js` 卡住超10分钟就改走 API/CLI——临时令牌只给 Pages:Edit 权限、`wrangler pages deploy` 传完即删令牌,浏览器继续管登录/变量/绑域名;`<项目>.pages.dev` 名字被占时 Cloudflare 会给带后缀的实际域名,首次 200 可能是别人的项目,先确认实际分配的域名归本项目再报成功;Agent 沙箱可能有透明代理/TLS 中间人,探活全军覆没时换干净出口(如目标地区附近的 VPS)用 `www.cloudflare.com` 这类必认的 SNI 验边缘存活,正式域名 SNI 等自定义域名生效后再验;DNSHE 表单全对却反复报后端失败,先怀疑登录会话过期、重登一次再提交,别反复重试表单;地区最终结论优先用真实客户端(如 xray)跑出的 `cdn-cgi/trace` 的 `colo`/`loc`,没有就标注未验证。免费域名年限同上:该站有不同年限，优先选10年期；若只有1年期，老实告知续期规则：到期前180天内免费续。
-
 ## 怎么用
 
-把整个文件夹交给 AI 助理,让它先读 `SKILL.md` 第 0 节门禁:缺 Cloudflare 登录方式、Worker 名、域名决定、ADMIN 密码、UUID 决定中的任何一项,它必须停下来问你,不得自行假设。备齐后按第 6 节部署,第 10 节出二维码。
+把整个文件夹交给支持 Skill 的 AI 助理，让它先读 `SKILL.md` 第 0 节门禁。缺 Cloudflare 登录方式、项目名、域名决定、ADMIN 密码、UUID 决定里的任何一项，它都必须停下来问你，不能自己假设。你只需要登录、过验证码、确认域名、选地区、最后扫码。
 
 ## 文件清单
 
 | 文件 | 作用 |
 |---|---|
-| `SKILL.md` | Skill 本体:门禁、源码校验、变量与 HOST 关系、订阅/URI 公式、部署、优选 IP、验证、排障、二维码、交付清单 |
-| `templates/wrangler.toml.example` | CLI 部署模板(密钥不进此文件,用 wrangler secret) |
-| `templates/ADD.txt.example` | 优选 IP 格式示例(占位符,不能直接用) |
-| `templates/env.example` | 变量清单(与 SKILL.md 第 3.2 节一致:首建 PROXYIP/BEST_SUB/GO2SOCKS5 留空) |
-| `templates/make_sub_qr.py` | 已实测的订阅二维码生成+解码校验脚本(pip install "qrcode[pil]") |
-| `templates/wrangler.pages.toml.example` | 路线 B:Pages 直传钉版文件的配置模板(2026-10-19 实测) |
-| `templates/sub_token.py` | 按源码公式 `MD5MD5(host+uuid)` 交叉核对订阅令牌,值从环境变量读 |
-| `templates/probe_e2e.py` | 优选入口 TLS 探活 + xray 端到端出口地区核验 |
-| `docs/tutorial-zh.md` | 给普通人的中文教程(从零到扫码,含踩坑和风险) |
-| `docs/x-thread-zh.md` | 教程的推文串精简版 |
-| `CHANGELOG.md` | 版本变更记录 |
+| `SKILL.md` | Skill 本体 |
+| `docs/tutorial-zh.md` | 新手中文教程（v3） |
+| `docs/x-thread-zh.md` | 推文串精简版 |
+| `templates/wrangler.toml.example` | Workers 命令行部署模板（密钥不进此文件） |
+| `templates/wrangler.pages.toml.example` | 路线 B：Pages 直传钉版文件的模板 |
+| `templates/env.example` | 变量清单（与 SKILL.md 第 3.2 节一致） |
+| `templates/ADD.txt.example` | 优选 IP 格式示例（占位符） |
+| `templates/make_sub_qr.py` | 订阅二维码生成 + 解码校验 |
+| `templates/sub_token.py` | 按源码公式 `MD5MD5(host+uuid)` 核对订阅令牌 |
+| `templates/probe_e2e.py` | 优选入口 TLS 探活 + xray 端到端出口核验 |
+| `CHANGELOG.md` | 版本记录 |
 
-## 费用实话(2026-10-17 查 Cloudflare 官方文档)
+## 费用实话（以 Cloudflare 官方文档为准）
 
-Workers 免费版每天 100,000 次请求,超限报 1027,UTC 零点重置;KV 免费版每天 100,000 次读、1,000 次写、账号 1 GB。个人自用一般够,触顶再考虑 Workers Paid。谁说"无限免费",让他出示官方文档。
+Workers 免费版每天 100,000 次请求，超了报 1027，UTC 零点（北京时间 8 点）重置；KV 免费版每天 100,000 次读、1,000 次写。一个人自用一般够。说"无限免费"的，让他拿官方文档出来。
 
 ## 安全红线
 
-- `ADMIN`、`UUID`、`KEY`、订阅链接、二维码 PNG、API Token 都是钥匙,不要发到公开仓库、文章、截图。本包全是占位符。
-- `_worker.js` 只用 SKILL.md 里的钉版地址下载,并校验 SHA-256,对不上就停。
-- 这不是匿名工具:Cloudflare 是运营方,账号与操作者身份绑定。
-- 先备一条非 CF 的备用线路。
-- 只用原作者仓库(cmliu/edgetunnel 钉版 + SHA-256 校验)。搜 edgetunnel/EDtunnel 会出来很多复制版,可能被改过代码偷 UUID。
-- 只自己用。Cloudflare 条款不允许把 Workers/Pages 当通用代理,自用属于自担风险;分享订阅、做机场、转卖最容易被封项目和账号。
-- 出口是 Cloudflare(AS13335)或中转 IP,不是家宽。
-
-## 发布方式
-
-仓库和 zip 里都只放占位符版本，不含任何真实账号、域名、UUID、令牌或订阅。
+- `ADMIN`、`UUID`、`KEY`、订阅链接、二维码、API Token 都是钥匙。本仓库全是占位符。
+- `_worker.js` 只从原作者仓库的钉版地址下载，核对 SHA-256，对不上就停。网上的复制版可能被改过代码偷 UUID。
+- 只自己用。Cloudflare 条款不允许拿 Workers/Pages 当通用代理（CloudflareSpeedTest 作者也在 README 里明确提醒），分享、做机场、转卖最容易封号。留一条非 CF 的备用线路。
+- 面板界面从 edt-pages.github.io 远程加载，Clash 订阅要经过 SUBAPI 转换：面板少登，介意就用 v2rayN / 小火箭直接读原始订阅。
 
 ## 致谢与来源
 
-- Skill 原作:[free-dam-man/cf-global-edge-node-skill](https://github.com/free-dam-man/cf-global-edge-node-skill)(v2,2026-10-17)。本仓库的 SKILL.md 结构、向导流程、门禁和模板都出自原作,v2-field-notes 只在原结构上做补充和修正,改动见 [CHANGELOG](CHANGELOG.md) 和 git 历史。原仓库未声明开源许可证。
-- 节点程序:[cmliu/edgetunnel](https://github.com/cmliu/edgetunnel)(GPL-2.0)。本仓库不打包 `_worker.js`,只给钉版下载地址和 SHA-256。
-- 社区优选 IP 列表等第三方数据只在运行时引用,不收录进本仓库。
+- **Skill 原作**：[free-dam-man/cf-global-edge-node-skill](https://github.com/free-dam-man/cf-global-edge-node-skill)（v2，2026-10-17）。SKILL.md 的结构、向导流程、门禁和模板都出自原作，后续版本在此基础上补充修正。
+- **节点程序**：[cmliu/edgetunnel](https://github.com/cmliu/edgetunnel)（GPL-2.0）。本仓库不收录 `_worker.js`，只给钉版下载地址和 SHA-256。
+- **社区教程**：[yonggekkk/Cloudflare-vless-trojan](https://github.com/yonggekkk/Cloudflare-vless-trojan)、[yonggekkk/sing-box-yg](https://github.com/yonggekkk/sing-box-yg)、[XIU2/CloudflareSpeedTest](https://github.com/XIU2/CloudflareSpeedTest)、[bia-pain-bache/BPB-Worker-Panel](https://github.com/bia-pain-bache/BPB-Worker-Panel)、[cmliu/WorkerVless2sub](https://github.com/cmliu/WorkerVless2sub)、[233boy/sing-box](https://github.com/233boy/sing-box)。本仓库只引用、转述它们的做法并附链接，不复制它们的代码或数据文件。
+- 社区优选 IP 列表等第三方数据只在运行时引用，不收录进本仓库。

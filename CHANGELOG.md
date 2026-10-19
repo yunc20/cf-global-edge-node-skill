@@ -1,5 +1,30 @@
 # Changelog
 
+## v3 (2026-10-19): merge original + field notes + community tutorials
+
+One coherent version built from three inputs: free-dam-man's original v2 Skill (structure kept), our v2 field notes, and the most useful, verified parts of well-known community tutorials. Every borrowed step cites its source. Placeholders only.
+
+Added
+- `docs/tutorial-zh.md` rewritten as a 17-section beginner guide: how it works, prerequisites, route choice (Pages+CNAME vs Workers+custom domain), free-domain comparison (DNSHE tested; DigitalPlat / eu.org community-reported), web and wrangler deploys, variable table, domain binding, every ADD.txt line type, CF port families, CloudflareSpeedTest on Win10, region advice for AI, proxyip explained, Shadowrocket / Clash Verge / v2rayN import, TLS fragment for blocked domains, swap loop, maintenance and upgrades, security, FAQ table, VPS alternative.
+- `SKILL.md` 3.5: PROXYIP and Cloudflare-hosted destinations (CF doc: Workers cannot `connect()` to CF IP ranges; code L44-49 auto per-colo default with fallback; `whatismyip` vs `ip.sb` check from yonggekkk).
+- `SKILL.md` 7A: ADD.txt line types (IPv4/IPv6/domain, `https://` list, `sub://`, pass-through `vless://` nodes, chain-proxy labels, `*` wildcard), code-verified line refs; CF port families.
+- `SKILL.md` 7B: operator-side CloudflareSpeedTest recipe (XIU2 README v2.3.5): proxy off, `-httping -cfcolo`, `-dd`, modest `-n`, IPv6 option.
+- `SKILL.md` 9: troubleshooting rows for proxyip failures, AI region refusal, blocked custom domain (new subdomain or client TLS fragment, L353), UDP limits, CFST anomalies.
+- `SKILL.md` 10: v2rayN as the no-converter Windows option; TLS fragment option semantics.
+- `SKILL.md` 12: CF ToS note quoted from XIU2, public-generator warning from WorkerVless2sub, never set `URL` to someone else's site.
+- `SKILL.md` 14 maintenance/upgrade procedure (re-pin on upgrade), 15 VPS alternative (sing-box-yg / 233boy, Reality first, merge VPS node via ADD.txt), 16 merge index.
+- Final Delivery Checklist: CF-hosted-site / proxyip check and maintenance note.
+
+Changed
+- `SKILL.md` 1: pin re-checked against upstream `main` HEAD a8ab111 (2026-10-09), still byte-identical; community sources listed.
+- `SKILL.md` 3.2 + `templates/env.example` + wrangler templates: `URL` (leave unset) and the other optional env switches documented.
+- `templates/ADD.txt.example`: other accepted line types.
+- `README.md` rewritten: overview, what's new in v3 with sources, credits.
+- `docs/x-thread-zh.md` refreshed (speed test, proxyip, repo link).
+
+Unchanged on purpose
+- Gate (Section 0), W1-W7 wizard with 第X/6步 numbering, heads-up card, Branch D, region loop 0B, pin + SHA-256, token formula, two-stage ADD.txt rule, QR delivery.
+
 ## v2-field-notes (2026-10-19)
 
 Folds in a second, independent production build (Route B, mainland-China operator, Shadowrocket + Clash Verge). All values de-identified; placeholders only.

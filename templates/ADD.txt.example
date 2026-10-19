@@ -4,6 +4,7 @@
 # Save it through the panel (POST /admin/ADD.txt). An ADD.txt-only change needs no redeploy.
 # Field note (2026-10-19): relay entries on the non-443 Cloudflare TLS ports 2053/2083/2087/8443 were the ones we could verify end to end.
 # Label with the VERIFIED exit region (TW-1, JP-1, ...), keep 3-5 verified backups per region OUTSIDE this file, and swap in a backup when a node times out on the real phone.
+# Other accepted line types (SKILL.md Section 7A): [<IPV6>]:443#LABEL, <DOMAIN>:2053#LABEL, a full https:// list URL, or a full vless:// URI passed through as an extra node. No trailing comments on entry lines.
 <ENTRY_IP_1>:8443#JP-1
 <ENTRY_IP_2>:2053#SG-1
 <ENTRY_DOMAIN_1>:2087#US-1
